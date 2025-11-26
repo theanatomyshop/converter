@@ -6,6 +6,7 @@ import platform
 import subprocess
 from pathlib import Path
 
+print("Script started!")
 
 BATCH_FILE_NAME = "run_converter.bat"
 
