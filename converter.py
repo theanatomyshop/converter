@@ -54,7 +54,7 @@ def main() -> None:
         sys.exit(1)
 
     expected_headers = list(pd.read_csv(default_csv, nrows=0).columns)
-    print(f"Expected CSV headers: {expected_headers}")
+    # print(f"Expected CSV headers: {expected_headers}")
 
     csv_path = select_csv_file()
     selected_headers = list(pd.read_csv(csv_path, nrows=0).columns)
