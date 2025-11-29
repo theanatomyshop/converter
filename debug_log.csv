@@ -1,0 +1,10 @@
+cgst,igst,interstate,invoice,invoice_amount,order,principal_basis,sgst,ship_amt,ship_cgst,ship_igst,ship_promo,ship_promo_tax,ship_sgst,ship_utgst,tcs_totals,txn,utgst,voucher_type
+0,243.92,True,PKFZ-3872,1599,406-0575493-1706743,1355.08,0,33.9,0,6.1,-33.9,-6.1,0,0,,Shipment,0,Amazon Sales
+0,610.02,True,PKFZ-3870,3999,405-6217933-4685967,3388.98,0,33.9,0,6.1,-33.9,-6.1,0,0,,Shipment,0,Amazon Sales
+0,457.47,True,PKFZ-3873,2999,407-6519513-0169952,2541.53,0,33.9,0,6.1,-33.9,-6.1,0,0,,Shipment,0,Amazon Sales
+0,289.68,True,PKFZ-3876,1899,407-8839072-0631538,1609.32,0,33.9,0,6.1,-33.9,-6.1,0,0,,Shipment,0,Amazon Sales
+0,213.41,True,PKFZ-3875,1399,404-9128252-5960322,1185.59,0,33.9,0,6.1,-33.9,-6.1,0,0,,Shipment,0,Amazon Sales
+60.94,0,False,PKFZ-3897,799,404-0269927-9737969,677.12,60.94,33.9,3.05,0,-33.9,-6.1,3.05,0,,Shipment,0,Amazon Sales
+0,182.9,True,PKFZ-3883,1199,403-0339774-8645122,1016.1,0,33.9,0,6.1,-33.9,-6.1,0,0,,Shipment,0,Amazon Sales
+632.97,0,False,PKFZ-3904,8299,403-0733672-5093910,7033.06,632.97,33.9,3.05,0,-33.9,-6.1,3.05,0,,Shipment,0,Amazon Sales
+,,,,,,,,,,,,,,,"{'cgst': '19.27', 'sgst': '19.27', 'utgst': '0', 'igst': '55.49'}",,,
