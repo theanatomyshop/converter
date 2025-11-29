@@ -83,14 +83,14 @@ def add_gst_rate_details(parent):
         add_text(rd, "GSTRATEVALUATIONTYPE", "Based on Value")
 
 
-def add_tax_lock_scaffolding(parent):
-    """Add empty GST-related allocation lists so Tally keeps supplied tax amounts."""
+def add_gst_scaffolding_pre(parent):
+    """Pre-rate empty lists placed before RATEDETAILS in ecom2tally output."""
     for tag in [
         "SERVICETAXDETAILS.LIST",
         "BANKALLOCATIONS.LIST",
         "SERVICETAXDETAILS.LIST",  # duplicate to mirror ecom2tally structure
         "CATEGORYALLOCATIONS.LIST",
-        "BANKALLOCATIONS.LIST",    # duplicate position to mirror ecom2tally structure
+        "BANKALLOCATIONS.LIST",  # duplicate position to mirror ecom2tally structure
         "BILLALLOCATIONS.LIST",
         "INTERESTCOLLECTION.LIST",
         "OLDAUDITENTRIES.LIST",
@@ -99,6 +99,13 @@ def add_tax_lock_scaffolding(parent):
         "INPUTCRALLOCS.LIST",
         "DUTYHEADDETAILS.LIST",
         "EXCISEDUTYHEADDETAILS.LIST",
+    ]:
+        ET.SubElement(parent, tag)
+
+
+def add_gst_scaffolding_post(parent):
+    """Post-rate empty lists placed after RATEDETAILS in ecom2tally output."""
+    for tag in [
         "SUMMARYALLOCS.LIST",
         "STPYMTDETAILS.LIST",
         "EXCISEPAYMENTALLOCATIONS.LIST",
@@ -215,6 +222,8 @@ def build_voucher(row, log_rows):
     add_text(voucher, "REFERENCE", inv_no if txn.lower() == "refund" else order_id)
     add_text(voucher, "VOUCHERNUMBER", credit_no if txn.lower() == "refund" else inv_no)
     add_text(voucher, "IRN", "")
+    add_text(voucher, "CSTFORMISSUETYPE", "")
+    add_text(voucher, "CSTFORMRECVTYPE", "")
     add_text(voucher, "BILLTOPLACE", "")
     add_text(voucher, "SHIPTOPLACE", ship_city)
     add_text(voucher, "PARTYPINCODE", ship_pin)
@@ -230,8 +239,8 @@ def build_voucher(row, log_rows):
     add_text(voucher, "BASICDATETIMEOFINVOICE", tally_disp_date(dt_invoice))
     add_text(voucher, "BASICDATETIMEOFREMOVAL", tally_disp_date(dt_invoice))
     add_text(voucher, "CONSIGNEESTATENAME", ship_state)
-    add_text(voucher, "EFFECTIVEDATE", tally_date(dt_invoice))
     add_text(voucher, "VCHGSTCLASS", "")
+    add_text(voucher, "EFFECTIVEDATE", tally_date(dt_invoice))
     add_text(voucher, "ENTEREDBY", "")
     add_text(voucher, "DIFFACTUALQTY", "No")
     add_text(voucher, "ISMSTFROMSYNC", "No")
@@ -298,6 +307,17 @@ def build_voucher(row, log_rows):
     add_text(voucher, "ALTERID", " ")
     add_text(voucher, "MASTERID", " ")
     add_text(voucher, "VOUCHERKEY", " ")
+    for tag in [
+        "EXCLUDEDTAXATIONS.LIST",
+        "OLDAUDITENTRIES.LIST",
+        "ACCOUNTAUDITENTRIES.LIST",
+        "AUDITENTRIES.LIST",
+        "DUTYHEADDETAILS.LIST",
+        "SUPPLEMENTARYDUTYHEADDETAILS.LIST",
+        "EWAYBILLDETAILS.LIST",
+        "INVOICEDELNOTES.LIST",
+    ]:
+        ET.SubElement(voucher, tag)
 
     if txn.lower() == "refund":
         add_text(voucher, "VATPARTYTRANSRETURNDATE", tally_date(date_for_voucher))
@@ -307,23 +327,60 @@ def build_voucher(row, log_rows):
     inv_order = ET.SubElement(voucher, "INVOICEORDERLIST.LIST")
     add_text(inv_order, "BASICORDERDATE", tally_date(dt_order))
     add_text(inv_order, "BASICPURCHASEORDERNO", order_id)
+    for tag in [
+        "INVOICEINDENTLIST.LIST",
+        "ATTENDANCEENTRIES.LIST",
+        "ORIGINVOICEDETAILS.LIST",
+        "INVOICEEXPORTLIST.LIST",
+    ]:
+        ET.SubElement(voucher, tag)
 
     # Party ledger entry
     party_le = ET.SubElement(voucher, "LEDGERENTRIES.LIST")
     old = ET.SubElement(party_le, "OLDAUDITENTRYIDS.LIST", {"TYPE": "Number"})
     add_text(old, "OLDAUDITENTRYIDS", "-1")
     add_text(party_le, "LEDGERNAME", "Amazon.in")
+    add_text(party_le, "GSTCLASS", "")
     party_amount = abs(invoice_amount) if txn.lower() == "refund" else -invoice_amount
     add_text(party_le, "ISDEEMEDPOSITIVE", "Yes" if party_amount < 0 else "No")
     add_text(party_le, "LEDGERFROMITEM", "No")
     add_text(party_le, "REMOVEZEROENTRIES", "No")
     add_text(party_le, "ISPARTYLEDGER", "Yes")
     add_text(party_le, "ISLASTDEEMEDPOSITIVE", "Yes" if party_amount < 0 else "No")
+    add_text(party_le, "ISCAPVATTAXALTERED", "No")
     add_text(party_le, "AMOUNT", fmt_amount(party_amount))
+    add_text(party_le, "SERVICETAXDETAILS.LIST", " ")
+    add_text(party_le, "BANKALLOCATIONS.LIST", " ")
     bills = ET.SubElement(party_le, "BILLALLOCATIONS.LIST")
     add_text(bills, "NAME", order_id)
     add_text(bills, "BILLTYPE", "New Ref")
+    add_text(bills, "TDSDEDUCTEEISSPECIALRATE", "No")
     add_text(bills, "AMOUNT", fmt_amount(party_amount))
+    ET.SubElement(bills, "INTERESTCOLLECTION.LIST")
+    ET.SubElement(bills, "STBILLCATEGORIES.LIST")
+    for tag in [
+        "INTERESTCOLLECTION.LIST",
+        "OLDAUDITENTRIES.LIST",
+        "ACCOUNTAUDITENTRIES.LIST",
+        "AUDITENTRIES.LIST",
+        "INPUTCRALLOCS.LIST",
+        "DUTYHEADDETAILS.LIST",
+        "EXCISEDUTYHEADDETAILS.LIST",
+        "RATEDETAILS.LIST",
+        "SUMMARYALLOCS.LIST",
+        "STPYMTDETAILS.LIST",
+        "EXCISEPAYMENTALLOCATIONS.LIST",
+        "TAXBILLALLOCATIONS.LIST",
+        "TAXOBJECTALLOCATIONS.LIST",
+        "TDSEXPENSEALLOCATIONS.LIST",
+        "VATSTATUTORYDETAILS.LIST",
+        "COSTTRACKALLOCATIONS.LIST",
+        "REFVOUCHERDETAILS.LIST",
+        "INVOICEWISEDETAILS.LIST",
+        "VATITCDETAILS.LIST",
+        "ADVANCETAXDETAILS.LIST",
+    ]:
+        ET.SubElement(party_le, tag)
 
     # Shipping ledger
     if ship_amt != 0:
@@ -342,8 +399,9 @@ def build_voucher(row, log_rows):
         add_text(ship_le, "ISLASTDEEMEDPOSITIVE", "Yes" if ship_amt < 0 else "No")
         add_text(ship_le, "AMOUNT", fmt_amount(ship_amt, force_two=True))
         add_text(ship_le, "VATEXPAMOUNT", fmt_amount(ship_amt, force_two=True))
-        add_tax_lock_scaffolding(ship_le)
+        add_gst_scaffolding_pre(ship_le)
         add_gst_rate_details(ship_le)
+        add_gst_scaffolding_post(ship_le)
 
     if ship_promo != 0:
         promo_le = ET.SubElement(voucher, "LEDGERENTRIES.LIST")
@@ -359,8 +417,12 @@ def build_voucher(row, log_rows):
         add_text(promo_le, "ISLASTDEEMEDPOSITIVE", "No")
         add_text(promo_le, "AMOUNT", fmt_amount(ship_promo, force_two=True))
         add_text(promo_le, "VATEXPAMOUNT", fmt_amount(ship_promo, force_two=True))
-        add_tax_lock_scaffolding(promo_le)
+        add_text(promo_le, "APPROPRIATEFOR", "GST")
+        add_text(promo_le, "GSTAPPROPRIATETO", "Goods and Services")
+        add_text(promo_le, "EXCISEALLOCTYPE", "Based on Value")
+        add_gst_scaffolding_pre(promo_le)
         add_gst_rate_details(promo_le)
+        add_gst_scaffolding_post(promo_le)
 
     # GST ledgers
     if inter:
@@ -379,8 +441,9 @@ def build_voucher(row, log_rows):
             add_text(igst_le, "ISLASTDEEMEDPOSITIVE", "Yes" if total_igst < 0 else "No")
             add_text(igst_le, "AMOUNT", fmt_amount(total_igst))
             add_text(igst_le, "VATEXPAMOUNT", fmt_amount(total_igst))
-            add_tax_lock_scaffolding(igst_le)
+            add_gst_scaffolding_pre(igst_le)
             add_gst_rate_details(igst_le)
+            add_gst_scaffolding_post(igst_le)
     else:
         # For intrastate, shipping promo tax should reduce local GST; if UTGST is in play, assign it there, else split between CGST/SGST.
         if utgst != 0 or ship_utgst != 0:
@@ -401,8 +464,9 @@ def build_voucher(row, log_rows):
             add_text(le, "ISDEEMEDPOSITIVE", "Yes" if total_cgst < 0 else "No")
             add_text(le, "AMOUNT", fmt_amount(total_cgst))
             add_text(le, "VATEXPAMOUNT", fmt_amount(total_cgst))
-            add_tax_lock_scaffolding(le)
+            add_gst_scaffolding_pre(le)
             add_gst_rate_details(le)
+            add_gst_scaffolding_post(le)
         if total_sgst != 0:
             le = ET.SubElement(voucher, "LEDGERENTRIES.LIST")
             old = ET.SubElement(le, "OLDAUDITENTRYIDS.LIST", {"TYPE": "Number"})
@@ -412,8 +476,9 @@ def build_voucher(row, log_rows):
             add_text(le, "ISDEEMEDPOSITIVE", "Yes" if total_sgst < 0 else "No")
             add_text(le, "AMOUNT", fmt_amount(total_sgst))
             add_text(le, "VATEXPAMOUNT", fmt_amount(total_sgst))
-            add_tax_lock_scaffolding(le)
+            add_gst_scaffolding_pre(le)
             add_gst_rate_details(le)
+            add_gst_scaffolding_post(le)
         if total_utgst != 0:
             le = ET.SubElement(voucher, "LEDGERENTRIES.LIST")
             old = ET.SubElement(le, "OLDAUDITENTRYIDS.LIST", {"TYPE": "Number"})
@@ -423,8 +488,9 @@ def build_voucher(row, log_rows):
             add_text(le, "ISDEEMEDPOSITIVE", "Yes" if total_utgst < 0 else "No")
             add_text(le, "AMOUNT", fmt_amount(total_utgst))
             add_text(le, "VATEXPAMOUNT", fmt_amount(total_utgst))
-            add_tax_lock_scaffolding(le)
+            add_gst_scaffolding_pre(le)
             add_gst_rate_details(le)
+            add_gst_scaffolding_post(le)
 
     # Inventory line
     inv = ET.SubElement(voucher, "ALLINVENTORYENTRIES.LIST")
@@ -443,9 +509,15 @@ def build_voucher(row, log_rows):
     add_text(batch, "GODOWNNAME", f" {WAREHOUSE_NAME}")
     add_text(batch, "BATCHNAME", "Primary Batch")
     add_text(batch, "DESTINATIONGODOWNNAME", f" {WAREHOUSE_NAME}")
+    add_text(batch, "INDENTNO", "")
+    add_text(batch, "ORDERNO", "")
+    add_text(batch, "TRACKINGNUMBER", "")
+    add_text(batch, "DYNAMICCSTISCLEARED", "No")
     add_text(batch, "AMOUNT", fmt_amount(principal_basis, force_two=True))
     add_text(batch, "ACTUALQTY", f"{qty} Nos")
     add_text(batch, "BILLEDQTY", f"{qty} Nos")
+    ET.SubElement(batch, "ADDITIONALDETAILS.LIST")
+    ET.SubElement(batch, "VOUCHERCOMPONENTLIST.LIST")
 
     add_inventory_scaffolding(inv)
 
@@ -459,8 +531,40 @@ def build_voucher(row, log_rows):
     add_text(acc, "REMOVEZEROENTRIES", "No")
     add_text(acc, "ISPARTYLEDGER", "No")
     add_text(acc, "ISLASTDEEMEDPOSITIVE", "Yes" if principal_basis < 0 else "No")
+    add_text(acc, "ISCAPVATTAXALTERED", "No")
     add_text(acc, "AMOUNT", fmt_amount(principal_basis, force_two=True))
+    add_text(acc, "SERVICETAXDETAILS.LIST", " ")
+    add_text(acc, "BANKALLOCATIONS.LIST", " ")
+    ET.SubElement(acc, "BILLALLOCATIONS.LIST")
+    ET.SubElement(acc, "INTERESTCOLLECTION.LIST")
+    ET.SubElement(acc, "OLDAUDITENTRIES.LIST")
+    ET.SubElement(acc, "ACCOUNTAUDITENTRIES.LIST")
+    ET.SubElement(acc, "AUDITENTRIES.LIST")
+    ET.SubElement(acc, "INPUTCRALLOCS.LIST")
+    ET.SubElement(acc, "DUTYHEADDETAILS.LIST")
+    ET.SubElement(acc, "EXCISEDUTYHEADDETAILS.LIST")
     add_gst_rate_details(acc)
+    ET.SubElement(acc, "SUMMARYALLOCS.LIST")
+    ET.SubElement(acc, "STPYMTDETAILS.LIST")
+    ET.SubElement(acc, "EXCISEPAYMENTALLOCATIONS.LIST")
+    ET.SubElement(acc, "TAXBILLALLOCATIONS.LIST")
+    ET.SubElement(acc, "TAXOBJECTALLOCATIONS.LIST")
+    ET.SubElement(acc, "TDSEXPENSEALLOCATIONS.LIST")
+    ET.SubElement(acc, "VATSTATUTORYDETAILS.LIST")
+    ET.SubElement(acc, "COSTTRACKALLOCATIONS.LIST")
+    ET.SubElement(acc, "REFVOUCHERDETAILS.LIST")
+    ET.SubElement(acc, "INVOICEWISEDETAILS.LIST")
+    ET.SubElement(acc, "VATITCDETAILS.LIST")
+    ET.SubElement(acc, "ADVANCETAXDETAILS.LIST")
+
+    for tag in [
+        "PAYROLLMODEOFPAYMENT.LIST",
+        "ATTDRECORDS.LIST",
+        "TEMPGSTRATEDETAILS.LIST",
+        "GSTEWAYCONSIGNORADDRESS.LIST",
+        "GSTEWAYCONSIGNEEADDRESS.LIST",
+    ]:
+        ET.SubElement(voucher, tag)
 
     return voucher
 
@@ -582,7 +686,6 @@ def convert(csv_path, xml_path):
             writer.writeheader()
             for row in debug_rows:
                 writer.writerow(row)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert Amazon CSV to Tally XML")
