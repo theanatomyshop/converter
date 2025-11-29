@@ -83,6 +83,57 @@ def add_gst_rate_details(parent):
         add_text(rd, "GSTRATEVALUATIONTYPE", "Based on Value")
 
 
+def add_tax_lock_scaffolding(parent):
+    """Add empty GST-related allocation lists so Tally keeps supplied tax amounts."""
+    for tag in [
+        "SERVICETAXDETAILS.LIST",
+        "BANKALLOCATIONS.LIST",
+        "SERVICETAXDETAILS.LIST",  # duplicate to mirror ecom2tally structure
+        "CATEGORYALLOCATIONS.LIST",
+        "BANKALLOCATIONS.LIST",    # duplicate position to mirror ecom2tally structure
+        "BILLALLOCATIONS.LIST",
+        "INTERESTCOLLECTION.LIST",
+        "OLDAUDITENTRIES.LIST",
+        "ACCOUNTAUDITENTRIES.LIST",
+        "AUDITENTRIES.LIST",
+        "INPUTCRALLOCS.LIST",
+        "DUTYHEADDETAILS.LIST",
+        "EXCISEDUTYHEADDETAILS.LIST",
+        "SUMMARYALLOCS.LIST",
+        "STPYMTDETAILS.LIST",
+        "EXCISEPAYMENTALLOCATIONS.LIST",
+        "TAXBILLALLOCATIONS.LIST",
+        "TAXOBJECTALLOCATIONS.LIST",
+        "TDSEXPENSEALLOCATIONS.LIST",
+        "VATSTATUTORYDETAILS.LIST",
+        "COSTTRACKALLOCATIONS.LIST",
+        "REFVOUCHERDETAILS.LIST",
+        "INVOICEWISEDETAILS.LIST",
+        "VATITCDETAILS.LIST",
+        "ADVANCETAXDETAILS.LIST",
+    ]:
+        ET.SubElement(parent, tag)
+
+
+def add_inventory_scaffolding(inv):
+    """Add flags and empty lists seen in ecom export to stop GST recompute."""
+    add_text(inv, "ISAUTONEGATE", "No")
+    add_text(inv, "ISCUSTOMSCLEARANCE", "No")
+    add_text(inv, "ISTRACKCOMPONENT", "No")
+    add_text(inv, "ISTRACKPRODUCTION", "No")
+    add_text(inv, "ISPRIMARYITEM", "No")
+    add_text(inv, "ISSCRAP", "No")
+    for tag in [
+        "DUTYHEADDETAILS.LIST",
+        "SUPPLEMENTARYDUTYHEADDETAILS.LIST",
+        "TAXOBJECTALLOCATIONS.LIST",
+        "REFVOUCHERDETAILS.LIST",
+        "EXCISEALLOCATIONS.LIST",
+        "EXPENSEALLOCATIONS.LIST",
+    ]:
+        ET.SubElement(inv, tag)
+
+
 def build_voucher(row, log_rows):
     txn = row["Transaction Type"].strip()
     vtype = voucher_type(txn)
@@ -291,6 +342,7 @@ def build_voucher(row, log_rows):
         add_text(ship_le, "ISLASTDEEMEDPOSITIVE", "Yes" if ship_amt < 0 else "No")
         add_text(ship_le, "AMOUNT", fmt_amount(ship_amt, force_two=True))
         add_text(ship_le, "VATEXPAMOUNT", fmt_amount(ship_amt, force_two=True))
+        add_tax_lock_scaffolding(ship_le)
         add_gst_rate_details(ship_le)
 
     if ship_promo != 0:
@@ -307,6 +359,7 @@ def build_voucher(row, log_rows):
         add_text(promo_le, "ISLASTDEEMEDPOSITIVE", "No")
         add_text(promo_le, "AMOUNT", fmt_amount(ship_promo, force_two=True))
         add_text(promo_le, "VATEXPAMOUNT", fmt_amount(ship_promo, force_two=True))
+        add_tax_lock_scaffolding(promo_le)
         add_gst_rate_details(promo_le)
 
     # GST ledgers
@@ -326,6 +379,7 @@ def build_voucher(row, log_rows):
             add_text(igst_le, "ISLASTDEEMEDPOSITIVE", "Yes" if total_igst < 0 else "No")
             add_text(igst_le, "AMOUNT", fmt_amount(total_igst))
             add_text(igst_le, "VATEXPAMOUNT", fmt_amount(total_igst))
+            add_tax_lock_scaffolding(igst_le)
             add_gst_rate_details(igst_le)
     else:
         # For intrastate, shipping promo tax should reduce local GST; if UTGST is in play, assign it there, else split between CGST/SGST.
@@ -347,6 +401,7 @@ def build_voucher(row, log_rows):
             add_text(le, "ISDEEMEDPOSITIVE", "Yes" if total_cgst < 0 else "No")
             add_text(le, "AMOUNT", fmt_amount(total_cgst))
             add_text(le, "VATEXPAMOUNT", fmt_amount(total_cgst))
+            add_tax_lock_scaffolding(le)
             add_gst_rate_details(le)
         if total_sgst != 0:
             le = ET.SubElement(voucher, "LEDGERENTRIES.LIST")
@@ -357,6 +412,7 @@ def build_voucher(row, log_rows):
             add_text(le, "ISDEEMEDPOSITIVE", "Yes" if total_sgst < 0 else "No")
             add_text(le, "AMOUNT", fmt_amount(total_sgst))
             add_text(le, "VATEXPAMOUNT", fmt_amount(total_sgst))
+            add_tax_lock_scaffolding(le)
             add_gst_rate_details(le)
         if total_utgst != 0:
             le = ET.SubElement(voucher, "LEDGERENTRIES.LIST")
@@ -367,6 +423,7 @@ def build_voucher(row, log_rows):
             add_text(le, "ISDEEMEDPOSITIVE", "Yes" if total_utgst < 0 else "No")
             add_text(le, "AMOUNT", fmt_amount(total_utgst))
             add_text(le, "VATEXPAMOUNT", fmt_amount(total_utgst))
+            add_tax_lock_scaffolding(le)
             add_gst_rate_details(le)
 
     # Inventory line
@@ -389,6 +446,8 @@ def build_voucher(row, log_rows):
     add_text(batch, "AMOUNT", fmt_amount(principal_basis, force_two=True))
     add_text(batch, "ACTUALQTY", f"{qty} Nos")
     add_text(batch, "BILLEDQTY", f"{qty} Nos")
+
+    add_inventory_scaffolding(inv)
 
     acc = ET.SubElement(inv, "ACCOUNTINGALLOCATIONS.LIST")
     old = ET.SubElement(acc, "OLDAUDITENTRYIDS.LIST", {"TYPE": "Number"})
